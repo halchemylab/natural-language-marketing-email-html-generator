@@ -10,6 +10,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- MAIN APP ---
+
+st.set_page_config(page_title="Webinar Email Generator", page_icon="📧", layout="wide")
+
+# Initialize session state
+if 'run_count' not in st.session_state:
+    st.session_state.run_count = 0
+    st.session_state.time_saved = 0
+    st.session_state.money_saved = 0.0
+    st.session_state.last_run_seconds = 0.0
+    st.session_state.email1_html = ""
+    st.session_state.email2_html = ""
+    st.session_state.parsed_json = None
+    st.session_state.api_key = os.getenv("OPENAI_API_KEY") or ""
+
 # --- TEMPLATES & SCHEMA ---
 # These templates can be edited to change branding, colors, and layout.
 # Use standard HTML and inline CSS. Placeholders like {title} will be replaced.
@@ -1350,22 +1365,79 @@ def cheap_prune(raw_text: str) -> str:
     return collapsed_text
 
 def extract_with_openai(cleaned_text: str, api_key: str, model: str, temperature: float) -> Dict[str, Any]:
+    """
+    Uses OpenAI's JSON mode to extract structured data from the pruned text.
+    """
+    client = openai.OpenAI(api_key=api_key)
 
-# --- MAIN APP ---
+    schema = {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "description": "The main title of the webinar. Should be concise."},
+            "subtitle": {"type": "string", "description": "The subtitle of the webinar. Often follows the main title."},
+            "intro": {"type": "string", "description": "A 1-2 paragraph introduction to the webinar's topic and purpose."},
+            "overview": {
+                "type": "object",
+                "properties": {
+                    "datetime_jp": {"type": "string", "description": "Date and time in Japan Standard Time (e.g., '2024年10月28日(月) 10:00～11:00')."},
+                    "datetime_pt": {"type": "string", "description": "Date and time in Pacific Time (e.g., '18:00-19:00 PT')."},
+                    "datetime_ct": {"type": "string", "description": "Date and time in Central Time (e.g., '20:00-21:00 CT')."},
+                    "datetime_et": {"type": "string", "description": "Date and time in Eastern Time (e.g., '21:00-22:00 ET')."},
+                    "place": {"type": "string", "description": "The location or platform (e.g., 'Online Webinar (Zoom)')."},
+                    "registration_deadline": {"type": "string", "description": "The deadline for registration (e.g., '米国時間11月17日（月）18:00 PST')."},
+                    "link": {"type": "string", "description": "The URL for registration or more details."},
+                    "notices": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "A list of important notices for attendees."
+                    }
+                },
+                "required": ["datetime_jp", "place", "link"]
+            },
+            "speakers": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "The speaker's full name and English name if available (e.g., '岸波 宏和氏 / Hirokazu Kishinami')."},
+                        "role": {"type": "string", "description": "The speaker's title and affiliation."}
+                    },
+                    "required": ["name", "role"]
+                }
+            }
+        },
+        "required": ["title", "subtitle", "intro", "overview", "speakers"]
+    }
 
-st.set_page_config(page_title="Webinar Email Generator", page_icon="📧", layout="wide")
+    system_prompt = f"""
+    You are a data extraction expert. Your task is to analyze the provided webinar brief and extract the key information in a structured JSON format.
+    The output MUST conform to this JSON schema:
+    {json.dumps(schema, indent=2)}
 
-# Initialize session state
-if 'run_count' not in st.session_state:
-    st.session_state.run_count = 0
-    st.session_state.time_saved = 0
-    st.session_state.money_saved = 0.0
-    st.session_state.last_run_seconds = 0.0
-    st.session_state.email1_html = ""
-    st.session_state.email2_html = ""
-    st.session_state.parsed_json = None
-    st.session_state.api_key = os.getenv("OPENAI_API_KEY") or ""
+    - Extract all relevant fields. If a field is not present in the text, omit it from the JSON unless it is required.
+    - For date and time, capture all timezones provided (PT, CT, ET, JST).
+    - The 'intro' should be a clean, well-formatted paragraph.
+    - 'notices' should be a list of individual points.
+    - Ensure the output is a single, valid JSON object.
+    """
 
+    response = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": cleaned_text}
+        ]
+    )
+
+    try:
+        parsed_json = json.loads(response.choices[0].message.content)
+        return parsed_json
+    except (json.JSONDecodeError, IndexError) as e:
+        st.error(f"Error parsing JSON from OpenAI: {e}")
+        st.text_area("Raw OpenAI Response:", response.choices[0].message.content)
+        return {}
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("📊 Metrics")
