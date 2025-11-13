@@ -1306,6 +1306,51 @@ def create_download_button(html_content: str, filename: str, label: str):
         mime='text/html',
     )
 
+# --- CORE FUNCTIONS ---
+
+def cheap_prune(raw_text: str) -> str:
+    """
+    Normalizes and prunes the raw text to reduce token count while preserving key info.
+    """
+    # 1. Normalize whitespace and bullets
+    text = re.sub(r'[\u200b\u200c\u200d\ufeff\xa0]', ' ', raw_text)
+    text = re.sub(r'[・◦●■]', '•', text)
+    text = re.sub(r'[\t ]+', ' ', text)
+    lines = text.split('\n')
+    
+    # 2. Filter for lines containing likely event-related keywords
+    keywords = [
+        '開催', '日時', '日本時間', 'PT', 'CT', 'ET', 'タイトル', '対象', 
+        '注意事項', '紹介文', '概要', '登壇者', '経歴', 'Zoom', '締切', 
+        '申し込み', 'URL', 'メール', 'agenda', 'speaker', 'topic', 'date', 'time'
+    ]
+    keyword_regex = re.compile('|'.join(keywords), re.IGNORECASE)
+    
+    # Regex for simple date/time/url patterns
+    pattern_regex = re.compile(
+        r'(\d{1,4}[-/年]\d{1,2}[-/月]\d{1,2}日?)|'  # Date like 2023/10/26
+        r'(\d{1,2}:\d{2})|'                        # Time like 10:00
+        r'(https?://\S+)|'                       # URL
+        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})' # Email
+    )
+
+    pruned_lines = [
+        line.strip() for line in lines 
+        if keyword_regex.search(line) or pattern_regex.search(line) or len(line.strip()) < 10 # Keep very short lines (often headings)
+    ]
+    
+    # Collapse multiple blank lines
+    collapsed_text = re.sub(r'\n{3,}', '\n\n', "\n".join(pruned_lines))
+    
+    # 3. Fallback: If speaker info seems to be lost, use original text
+    speaker_keywords_present = any(kw in raw_text for kw in ['登壇者', '経歴', 'speaker'])
+    if speaker_keywords_present and not any(kw in collapsed_text for kw in ['登壇者', '経歴', 'speaker']):
+        return raw_text # Fallback to original if pruning was too aggressive
+        
+    return collapsed_text
+
+def extract_with_openai(cleaned_text: str, api_key: str, model: str, temperature: float) -> Dict[str, Any]:
+
 # --- MAIN APP ---
 
 st.set_page_config(page_title="Webinar Email Generator", page_icon="📧", layout="wide")
