@@ -5,6 +5,10 @@ import json
 import time
 import base64
 from typing import Dict, Any, List
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- TEMPLATES & SCHEMA ---
 # These templates can be edited to change branding, colors, and layout.
@@ -1315,7 +1319,7 @@ if 'run_count' not in st.session_state:
     st.session_state.email1_html = ""
     st.session_state.email2_html = ""
     st.session_state.parsed_json = None
-    st.session_state.api_key = ""
+    st.session_state.api_key = os.getenv("OPENAI_API_KEY") or ""
 
 # --- SIDEBAR ---
 with st.sidebar:
