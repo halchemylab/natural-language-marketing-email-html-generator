@@ -336,6 +336,19 @@ if 'run_count' not in st.session_state:
 
 # --- SIDEBAR ---
 with st.sidebar:
+    st.header("📊 Metrics")
+    with st.container(border=True):
+        st.metric("Runs", st.session_state.run_count)
+    with st.container(border=True):
+        st.metric("Time Saved (minutes)", f"{st.session_state.time_saved}")
+    with st.container(border=True):
+        st.metric("Money Saved ($)", f"${st.session_state.money_saved:,.2f}")
+
+    if st.session_state.last_run_seconds > 0:
+        st.info(f"Last run: {st.session_state.last_run_seconds:.2f}s")
+
+    st.divider()
+
     st.header("⚙️ Settings")
     
     st.session_state.api_key = st.text_input(
@@ -356,13 +369,6 @@ with st.sidebar:
         "Temperature", 0.0, 1.0, 0.2, 0.05,
         help="Lower values make the output more deterministic and focused."
     )
-    
-    st.header("📊 Metrics")
-    st.metric("Runs", st.session_state.run_count)
-    st.metric("Time Saved (minutes)", f"{st.session_state.time_saved}")
-    st.metric("Money Saved ($)", f"${st.session_state.money_saved:,.2f}")
-    if st.session_state.last_run_seconds > 0:
-        st.info(f"Last run: {st.session_state.last_run_seconds:.2f}s")
 
 # --- MAIN UI ---
 st.title("📧 Webinar → Two Emails (LP-style)")
