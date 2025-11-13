@@ -338,16 +338,14 @@ if 'run_count' not in st.session_state:
 with st.sidebar:
     st.header("📊 Metrics")
     with st.container(border=True):
-        st.metric("Runs", st.session_state.run_count)
+        st.metric("Count", f"{st.session_state.run_count} runs")
     with st.container(border=True):
-        st.metric("Time Saved (minutes)", f"{st.session_state.time_saved}")
+        st.metric("Time Saved", f"{st.session_state.time_saved} min")
     with st.container(border=True):
-        st.metric("Money Saved ($)", f"${st.session_state.money_saved:,.2f}")
+        st.metric("Money Saved", f"{st.session_state.money_saved:,.2f}")
 
     if st.session_state.last_run_seconds > 0:
         st.info(f"Last run: {st.session_state.last_run_seconds:.2f}s")
-
-    st.divider()
 
     st.header("⚙️ Settings")
     
