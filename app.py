@@ -342,7 +342,7 @@ with st.sidebar:
     with st.container(border=True):
         st.metric("Time Saved", f"{st.session_state.time_saved} min")
     with st.container(border=True):
-        st.metric("Money Saved", f"{st.session_state.money_saved:,.2f}")
+        st.metric("Money Saved", f"${st.session_state.money_saved:,.2f}")
 
     if st.session_state.last_run_seconds > 0:
         st.info(f"Last run: {st.session_state.last_run_seconds:.2f}s")
