@@ -57,30 +57,15 @@ def render_final_email(template_html: str, data: Dict[str, Any]) -> str:
     overview = data.get('overview', {})
 
     # --- Replace simple text fields ---
-    html = html.replace(
-        '第二次トランプ政権の発足以降、移民受入れ制限の公約のもと、さまざまな大統領令が打ち出され、米国移民法のあらゆる側面で厳格化が加速しています。その影響は、日系企業が活用する各種ビザにも及び、採用や駐在員派遣に関するルールが次々と変更されるなど、米国で事業を行うすべての企業において、これまで以上に柔軟かつ迅速な対応と、的確なリスクマネジメントが求められています。<br>\n&nbsp;<br>\n本ウェビナーでは、移民法専門弁護士をお招きし、実際に企業から寄せられる「よくある質問 Top 5」をもとに、最新の政策動向とその実務的な対応策を解説します。',
-        to_br(data.get('intro', ''))
-    )
-    html = html.replace(
-        '第二次トランプ政権下で加速する<br>\n移民政策の厳格化・在米日系企業への影響',
-        to_br(data.get('title', ''))
-    )
-    html = html.replace(
-        '～よくある質問Top 5から考える、<br>\n厳格化を乗り切るための実践的ヒント～',
-        to_br(data.get('subtitle', ''))
-    )
-    html = html.replace(
-        'オンラインウェビナー（ツール：ZOOM）',
-        overview.get('place', '')
-    )
-    html = html.replace(
-        '米国時間11月17日（月）18:00　PST',
-        overview.get('registration_deadline', '')
-    )
+    html = html.replace('{{intro}}', to_br(data.get('intro', '')))
+    html = html.replace('{{title}}', to_br(data.get('title', '')))
+    html = html.replace('{{subtitle}}', to_br(data.get('subtitle', '')))
+    html = html.replace('{{place}}', overview.get('place', ''))
+    html = html.replace('{{registration_deadline}}', overview.get('registration_deadline', ''))
 
     # --- Replace links ---
     if overview.get('link'):
-        html = html.replace('https://www.pasona.com/seminar/visa_111925/', overview['link'])
+        html = html.replace('{{link}}', overview['link'])
 
     # --- Replace date/time block ---
     datetime_parts = [
@@ -90,10 +75,7 @@ def render_final_email(template_html: str, data: Dict[str, Any]) -> str:
         overview.get('datetime_et', '')
     ]
     datetime_str = '<br>\n'.join(filter(None, datetime_parts))
-    html = html.replace(
-        '<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">&nbsp; &nbsp;日程： 2025年11月19日（水）<br>\n&nbsp; &nbsp;時間：13:00-14:00 PT/ 15:00-16:00 CT/16:00-17:00 ET</span></span>',
-        f'<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">{datetime_str}</span></span>'
-    )
+    html = html.replace('{{datetime}}', f'<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">{datetime_str}</span></span>')
 
     # --- Replace speaker block ---
     speakers = data.get('speakers', [])
@@ -104,19 +86,13 @@ def render_final_email(template_html: str, data: Dict[str, Any]) -> str:
             role = speaker.get('role', '')
             speaker_blocks.append(f"&nbsp; &nbsp;<strong>{to_br(name)}</strong><br>\n&nbsp; &nbsp;{to_br(role)}")
         speaker_html = '<br>\n<br>\n'.join(speaker_blocks)
-        html = html.replace(
-            '<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">&nbsp; &nbsp;<strong>岸波　宏和氏 / Hirokazu Kishinami</strong><br>\n&nbsp; &nbsp;増田・舟井・アイファート・ミッチェル法律事務所 / 弁護士</span></span>',
-            f'<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">{speaker_html}</span></span>'
-        )
+        html = html.replace('{{speakers}}', f'<span style="font-size:14px;"><span style="font-family:Arial,Helvetica,sans-serif;">{speaker_html}</span></span>')
 
     # --- Replace notices block ---
     notices = overview.get('notices', [])
     if notices:
         notice_html = '\n'.join([f'<li><span style="font-family:Arial,Helvetica,sans-serif;"><span style="font-size:14px;">{to_br(item)}</span></span></li>' for item in notices])
-        html = html.replace(
-            '<ul>\n<li><span style="font-family:Arial,Helvetica,sans-serif;"><span style="font-size:14px;">イベントご参加用のURLは、ご登録いただいた方に、<br>\n開催日1営業日前にお送りいたします。</span></span></li>\n<li><span style="font-family:Arial,Helvetica,sans-serif;"><span style="font-size:14px;">Zoomのアプリをインストール（無料）のうえ、ご参加<br>\nされることを推奨しておりますが必須ではございません。</span></span></li>\n</ul>',
-            f'<ul>\n{notice_html}\n</ul>'
-        )
+        html = html.replace('{{notices}}', f'<ul>\n{notice_html}\n</ul>')
     
     return html
 
@@ -141,36 +117,23 @@ def cheap_prune(raw_text: str) -> str:
     text = re.sub(r'[・◦●■]', '•', text)
     text = re.sub(r'[\t ]+', ' ', text)
     lines = text.split('\n')
-    
-    # 2. Filter for lines containing likely event-related keywords
+
+    # 2. Remove very short lines or lines with only whitespace, but keep lines with keywords
     keywords = [
-        '開催', '日時', '日本時間', 'PT', 'CT', 'ET', 'タイトル', '対象', 
-        '注意事項', '紹介文', '概要', '登壇者', '経歴', 'Zoom', '締切', 
+        '開催', '日時', '日本時間', 'PT', 'CT', 'ET', 'タイトル', '対象',
+        '注意事項', '紹介文', '概要', '登壇者', '経歴', 'Zoom', '締切',
         '申し込み', 'URL', 'メール', 'agenda', 'speaker', 'topic', 'date', 'time'
     ]
     keyword_regex = re.compile('|'.join(keywords), re.IGNORECASE)
-    
-    # Regex for simple date/time/url patterns
-    pattern_regex = re.compile(
-        r'(\d{1,4}[-/年]\d{1,2}[-/月]\d{1,2}日?)|'  # Date like 2023/10/26
-        r'(\d{1,2}:\d{2})|'                        # Time like 10:00
-        r'(https?://\S+)|'                       # URL
-        r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})' # Email
-    )
 
     pruned_lines = [
-        line.strip() for line in lines 
-        if keyword_regex.search(line) or pattern_regex.search(line) or len(line.strip()) < 10 # Keep very short lines (often headings)
+        line.strip() for line in lines
+        if keyword_regex.search(line) or len(line.strip()) > 10
     ]
-    
+
     # Collapse multiple blank lines
     collapsed_text = re.sub(r'\n{3,}', '\n\n', "\n".join(pruned_lines))
-    
-    # 3. Fallback: If speaker info seems to be lost, use original text
-    speaker_keywords_present = any(kw in raw_text for kw in ['登壇者', '経歴', 'speaker'])
-    if speaker_keywords_present and not any(kw in collapsed_text for kw in ['登壇者', '経歴', 'speaker']):
-        return raw_text # Fallback to original if pruning was too aggressive
-        
+
     return collapsed_text
 
 def extract_with_openai(cleaned_text: str, api_key: str, model: str, temperature: float) -> Dict[str, Any]:
@@ -193,22 +156,22 @@ def extract_with_openai(cleaned_text: str, api_key: str, model: str, temperature
                     "datetime_ct": {"type": "string", "description": "Date and time in Central Time (e.g., '20:00-21:00 CT')."},
                     "datetime_et": {"type": "string", "description": "Date and time in Eastern Time (e.g., '21:00-22:00 ET')."},
                     "place": {"type": "string", "description": "The location or platform (e.g., 'Online Webinar (Zoom)')."},
-                    "registration_deadline": {"type": "string", "description": "The deadline for registration (e.g., '米国時間11月17日（月）18:00 PST')."},
-                    "link": {"type": "string", "description": "The URL for registration or more details."},
+                    "registration_deadline": {"type": "string", "description": "The deadline for registration (e.g., '米国時間11月17日（月）18:00 PST'). If not present, return an empty string."},
+                    "link": {"type": "string", "description": "The URL for registration or more details. If not present, return an empty string."},
                     "notices": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": "A list of important notices for attendees."
                     }
                 },
-                "required": ["datetime_jp", "place", "link"]
+                "required": ["datetime_jp", "place"]
             },
             "speakers": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "name": {"type": "string", "description": "The speaker's full name and English name if available (e.g., '岸波 宏和氏 / Hirokazu Kishinami')."},
+                        "name": {"type": "string", "description": "The speaker's full name and English name if available (e.g., '岸波 宏和氏 / Hirokazu Kishinami'). If not explicitly labeled, infer from the start of the biography."},
                         "role": {"type": "string", "description": "The speaker's title and affiliation."}
                     },
                     "required": ["name", "role"]
@@ -227,6 +190,8 @@ def extract_with_openai(cleaned_text: str, api_key: str, model: str, temperature
     - For date and time, capture all timezones provided (PT, CT, ET, JST).
     - The 'intro' should be a clean, well-formatted paragraph.
     - 'notices' should be a list of individual points.
+    - If a speaker's name is not explicitly labeled, infer it from the start of the biography.
+    - If the registration deadline or link is not present, return an empty string for those fields.
     - Ensure the output is a single, valid JSON object.
     """
 
