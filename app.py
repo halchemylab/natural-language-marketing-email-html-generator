@@ -7,6 +7,7 @@ import base64
 from typing import Dict, Any, List
 import os
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 
@@ -16,9 +17,16 @@ st.set_page_config(page_title="Webinar Email Generator", page_icon="📧", layou
 
 # Initialize session state
 if 'run_count' not in st.session_state:
-    st.session_state.run_count = 0
-    st.session_state.time_saved = 0
-    st.session_state.money_saved = 0.0
+    try:
+        df = pd.read_csv("run_log.csv")
+        if not df.empty:
+            st.session_state.run_count = df["run_count"].iloc[0]
+        else:
+            st.session_state.run_count = 0
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        st.session_state.run_count = 0
+    st.session_state.time_saved = st.session_state.run_count * 30
+    st.session_state.money_saved = st.session_state.run_count * (30 / 60) * 40
     st.session_state.last_run_seconds = 0.0
     st.session_state.email1_html = ""
     st.session_state.email2_html = ""
@@ -294,9 +302,11 @@ if st.button("Generate Emails", type="primary"):
                 st.session_state.run_count += 1
                 st.session_state.time_saved += 30
                 st.session_state.money_saved += (30 / 60) * 40 # Assume $40/hr
+                
+                df = pd.DataFrame({"run_count": [st.session_state.run_count]})
+                df.to_csv("run_log.csv", index=False)
 
                 st.success(f"✓ Success! Generated in {st.session_state.last_run_seconds:.2f}s. ({prune_msg})")
-                st.rerun()
 
             except openai.APIError as e:
                 st.error(f"An OpenAI API error occurred: {e.message}")
