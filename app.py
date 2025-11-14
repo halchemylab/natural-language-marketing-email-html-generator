@@ -291,6 +291,8 @@ with st.sidebar:
         value=st.session_state.api_key,
         help="Your API key is used only for this session and not stored."
     )
+    if not st.session_state.api_key:
+        st.warning("Please enter your OpenAI API Key to generate emails.")
     
     model = st.selectbox(
         "Model",
@@ -321,10 +323,8 @@ raw_text_input = st.text_area(
 """
 )
 
-if st.button("Generate Emails", type="primary"):
-    if not st.session_state.api_key:
-        st.error("Please enter your OpenAI API Key in the sidebar.")
-    elif not raw_text_input.strip():
+if st.button("Generate Emails", type="primary", disabled=not st.session_state.api_key):
+    if not raw_text_input.strip():
         st.warning("Please paste some text into the brief area.")
     else:
         start_time = time.time()

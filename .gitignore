@@ -1,1 +1,13 @@
+# Environment variables
+.envexample
 .env
+
+# Log files
+run_log.csv
+
+# Python
+__pycache__/
+venv/
+.venv/
+env/
+.env/
