@@ -29,7 +29,7 @@ if 'run_count' not in st.session_state:
     st.session_state.money_saved = st.session_state.run_count * (30 / 60) * 40
     st.session_state.last_run_seconds = 0.0
     st.session_state.email1_html = ""
-    st.session_state.email2_html = ""
+    st.session_state.email2_text = ""
     st.session_state.parsed_json = None
     st.session_state.api_key = os.getenv("OPENAI_API_KEY") or ""
 
@@ -37,6 +37,8 @@ if 'run_count' not in st.session_state:
 def load_template(template_name: str) -> str:
     """Loads an HTML template from a file."""
     file_path = f"email_template_{template_name}.html"
+    if template_name == "text":
+        file_path = "email_template_text.txt"
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -45,7 +47,7 @@ def load_template(template_name: str) -> str:
         return ""
 
 EMAIL1_TEMPLATE = load_template("announcement")
-EMAIL2_TEMPLATE = load_template("reminder")
+EMAIL2_TEMPLATE = load_template("text")
 
 # --- HTML RENDERING HELPERS ---
 
@@ -103,6 +105,54 @@ def render_final_email(template_html: str, data: Dict[str, Any]) -> str:
         html = html.replace('{{notices}}', f'<ul>\n{notice_html}\n</ul>')
     
     return html
+
+def render_final_email_text(template_text: str, data: Dict[str, Any]) -> str:
+    """
+    Renders the final text email by replacing placeholders in the text template.
+    """
+    text = template_text
+    overview = data.get('overview', {})
+
+    # --- Replace simple text fields ---
+    text = text.replace('{{intro}}', data.get('intro', ''))
+    text = text.replace('{{title}}', data.get('title', ''))
+    text = text.replace('{{subtitle}}', data.get('subtitle', ''))
+    text = text.replace('{{place}}', overview.get('place', ''))
+    text = text.replace('{{registration_deadline}}', overview.get('registration_deadline', ''))
+
+    # --- Replace links ---
+    if overview.get('link'):
+        text = text.replace('{{link}}', overview['link'])
+
+    # --- Replace date/time block ---
+    datetime_parts = [
+        f"日程： {overview.get('datetime_jp', '')}",
+        f"時間：{overview.get('datetime_pt', '')}",
+        overview.get('datetime_ct', ''),
+        overview.get('datetime_et', '')
+    ]
+    datetime_str = '\n'.join(filter(None, datetime_parts))
+    text = text.replace('{{datetime}}', datetime_str)
+    text = text.replace('{{datetime_jp}}', overview.get('datetime_jp', ''))
+
+    # --- Replace speaker block ---
+    speakers = data.get('speakers', [])
+    if speakers:
+        speaker_blocks = []
+        for speaker in speakers:
+            name = speaker.get('name', '')
+            role = speaker.get('role', '')
+            speaker_blocks.append(f"{name}\n{role}")
+        speaker_html = '\n\n'.join(speaker_blocks)
+        text = text.replace('{{speakers}}', speaker_html)
+
+    # --- Replace notices block ---
+    notices = overview.get('notices', [])
+    if notices:
+        notice_html = '\n'.join([f'・{item}' for item in notices])
+        text = text.replace('{{notices}}', notice_html)
+    
+    return text
 
 def create_download_button(html_content: str, filename: str, label: str):
     """Generates a download button for the given HTML content."""
@@ -293,8 +343,8 @@ if st.button("Generate Emails", type="primary"):
                 email1_html = render_final_email(EMAIL1_TEMPLATE, data)
                 st.session_state.email1_html = email1_html
 
-                email2_html = render_final_email(EMAIL2_TEMPLATE, data)
-                st.session_state.email2_html = email2_html
+                email2_text = render_final_email_text(EMAIL2_TEMPLATE, data)
+                st.session_state.email2_text = email2_text
 
                 # 5. Update metrics
                 end_time = time.time()
@@ -318,14 +368,14 @@ if st.session_state.email1_html:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Email #1 (Announcement)")
+        st.subheader("Email (HTML)")
         st.code(st.session_state.email1_html, language="html")
-        create_download_button(st.session_state.email1_html, "email_announcement.html", "Download HTML #1")
+        create_download_button(st.session_state.email1_html, "email_announcement.html", "Download HTML")
 
     with col2:
-        st.subheader("Email #2 (Reminder)")
-        st.code(st.session_state.email2_html, language="html")
-        create_download_button(st.session_state.email2_html, "email_reminder.html", "Download HTML #2")
+        st.subheader("Email (Text)")
+        st.code(st.session_state.email2_text, language="text")
+        create_download_button(st.session_state.email2_text, "email_text.txt", "Download Text")
 
     if st.checkbox("Show parsed JSON data"):
         st.json(st.session_state.parsed_json)

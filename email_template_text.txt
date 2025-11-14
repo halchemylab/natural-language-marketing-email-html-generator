@@ -1,0 +1,44 @@
+◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+【{{datetime_jp}}ウェビナー】{{title}}
+{{subtitle}}
+◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+{{intro}}
+
+​​​​​​◆----------------------------------------------------------------------◆◆◆
+お申し込みページ＆ご登録フォーム
+{{link}}
+​​​​​​◆----------------------------------------------------------------------◆◆◆
+【登壇者】
+{{speakers}}
+
+​​​​​​◆----------------------------------------------------------------------◆◆◆
+【概要】
+{{title}}
+{{subtitle}}
+
+●日時
+{{datetime}}
+
+●場所
+{{place}}
+{{notices}}
+
+-----------------------------------------------------------------------------------------------------
+●お申し込み
+お申し込みページ＆ご登録フォーム
+{{link}}
+
+●お問い合わせ
+Pasona N A, Inc. 
+infonews@pasona.com
+
+---------------------------------------------------------------------------------------------------------------------
+This message was sent to infonews@pasona.com
+If you no longer wish to receive e-mails from us, unsubscribe
+{{Unsubscribe}}
+
+This message may contain information that is legally privileged or confidential. 
+If you received this transmission in error, regardless of whether you are a named recipient, 
+please kindly notify the sender by reply e-mail and delete the message and any attachments. 
+Any opinions expressed in this message may not reflect views of the company.
+---------------------------------------------------------------------------------------------------------------------
