@@ -305,8 +305,8 @@ with st.sidebar:
     )
 
 # --- MAIN UI ---
-st.title("📧 Webinar → Two Emails (LP-style)")
-st.caption("Paste a messy webinar brief from Word/Outlook to generate two clean HTML emails.")
+st.title("📧 Webinar → Two Emails")
+st.caption("Paste a messy webinar brief from Word/Outlook to generate 1 HTML and 1 text email.")
 
 raw_text_input = st.text_area(
     "Paste your webinar brief here (JP or EN)",
@@ -381,4 +381,4 @@ if st.session_state.email1_html:
         st.json(st.session_state.parsed_json)
 
 st.markdown("---")
-st.caption("Powered by Streamlit. Uses OpenAI Structured Outputs for schema-locked JSON.")
+st.caption("Made with :brain:. Using the combined power of human and robot.")
